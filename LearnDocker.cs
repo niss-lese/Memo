@@ -1,10 +1,11 @@
-# region Chapter 1
+# region Chapter_1
 ** Clean up
 - docker container rm -f $(docker container ls -aq)
 - docker image rm -f $(docker image ls -f reference='diamol/*' -q)
 #endregion
 
-# region Chapter 2
+
+# region Chapter_2
 ** Starting an interactive with terminal connection
 docker container run --interactive --tty diamol/base
 docker container run -ti diamol/base // (same as above interactive terminal)
@@ -42,7 +43,8 @@ with docker container stop <id> before you run the docker container cp command,
 and then start the container again afterwards with docker container start <id>.
 #endregion
 
-# region Chapter 3
+
+# region Chapter_3
 ** --name flag enable the naming of container
 docker container run -d --name web-ping diamol/ch03-web-ping
 
@@ -110,3 +112,66 @@ Container can be used to produce new images.
 - docker container run newContainerName
 
 #endregion
+
+
+# region Chapter_4
+* Multi-Stage Dockerfile
+
+FROM diamol/base AS build-stage
+RUN echo 'Building...' > /build.txt
+FROM diamol/base AS test-stage
+COPY --from=build-stage /build.txt /build.txt
+RUN echo 'Testing...' >> /build.txt
+FROM diamol/base
+COPY --from=test-stage /build.txt /build.txt
+CMD cat /build.txt
+
+
+* Docker Network
+docker network create
+* Running a container and connecting it to the network 
+docker container run --name iotd -d -p 800:80 --network nat myImage
+
+
+* OPTIMIZING DOCKERFILE
+** File to optimize
+FROM diamol/golang 
+
+WORKDIR web
+COPY index.html .
+COPY main.go .
+
+RUN go build -o /web/server
+RUN chmod +x /web/server
+
+CMD ["/web/server"]
+ENV USER=sixeyed
+EXPOSE 80
+
+** Optimized file
+FROM diamol/golang AS builder
+
+COPY main.go .
+RUN go build -o /server
+RUN chmod +x /server
+
+# app
+FROM diamol/base
+
+EXPOSE 80
+CMD ["/web/server"]
+ENV USER="sixeyed"
+
+WORKDIR web
+COPY --from=builder /server .
+COPY index.html .
+
+#endregion
+
+
+# region Chapter_5
+
+
+#endregion
+
+
