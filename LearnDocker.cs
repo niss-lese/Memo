@@ -1,7 +1,9 @@
 # region Chapter_1
-** Clean up
+** Common
+- docker info
 - docker container rm -f $(docker container ls -aq)
 - docker image rm -f $(docker image ls -f reference='diamol/*' -q)
+- docker image ls --filter reference=my-image-name --filter reference='*/another-image-name'
 #endregion
 
 
@@ -170,8 +172,74 @@ COPY index.html .
 
 
 # region Chapter_5
+* Login into dockerhub
+** $dockerId is the dockerhub username
+docker login --username $dockerId
 
+* Creating a new reference for existing image, along with tag version
+docker image tag my-old-image $dockerId/my-new-image:tag-version
 
+* Pushing image to dockerhub
+docker image push $dockerId/image-gallery:v01
+
+* Running Docker registry locally
+** Using diamol/registry
+docker container run -d -p 5000:5000 --restart always diamol/registry
+
+* Giving computer a name, instead of local host
+# using PowerShell on Windows
+Add-Content -Value "127.0.0.1 registry.local" -Path /windows/system32/drivers/etc/hosts
+# using Bash on Linux or Mac
+echo $'\n127.0.0.1 registry.local' | sudo tee -a /etc/hosts
+
+	If you get a permissions error from that command, you’ll need to be logged in with
+	administrator privileges in an elevated PowerShell session on Windows, or use sudo on
+	Linux or Mac.
+	
+* Creating new image for local registry
+** Local registry doesn’t have any authentication or authorization set up
+docker image tag image-gallery registry.local:5000/gallery/ui:v1
+**
+	Three containers make up the NASA
+	image-of-the-day app in chapter 4—you could tag all the images to group them
+	together using gallery as the project name:
+ registry.local:5000/gallery/ui:v1—The Go web UI
+ registry.local:5000/gallery/api:v1—The Java API
+ registry.local:5000/gallery/logs:v1—The Node.js API
+
+	Docker won’t communicate with an unencrypted registry by
+	default, because it’s not secure. You need to explicitly add your registry domain to a
+	list of permitted insecure registries before Docker will let you use it.
+	This brings us to configuring Docker. The Docker Engine uses a JSON configuration file for
+	all sorts of settings, including where Docker stores the image layers on disk, where the Docker
+	API listens for connections, and which insecure
+	registries are permitted. The file is called daemon.json and it usually lives in the
+	folder C:\ProgramData\docker\config on Windows Server, and /etc/docker on
+	Linux. You can edit that file directly, but if you’re using Docker Desktop on Mac
+	or Windows, you’ll need use the UI, where you can change the main configuration settings.
+	TRY IT NOW Right-click the Docker whale icon in your taskbar, and select Settings (or Preferences on the Mac).
+	Then open the Daemon tab and enter
+	registry.local:5000 in the insecure registries list
+	
+	Then restart Docker using Restart-Service docker on Windows Server, or service
+	docker restart on Linux
+
+* Pushing image to local registry
+docker image push registry.local:5000/gallery/ui:v1
+
+* Versioning of tags
+	The basic idea is something like [major].[minor].[patch], which has
+	some implicit guarantees. A release that only increments the patch number might
+	have bug fixes, but it should have the same features as the last version; a release that
+	increments the minor version might add features but shouldn’t remove any; and a
+	major release could have completely different features.
+	
+* LAB
+** deleteimage from local registry
+- List images on local registry
+curl http://registry.local:5000/v2/gallery/ui/tags/list
+- Delete did not work 
+*** https://github.com/sixeyed/diamol/tree/master/ch05/lab
 #endregion
 
 
